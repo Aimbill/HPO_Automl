@@ -19,7 +19,7 @@ def get_models(problem_type):
             ('catboost', CatBoostClassifier(silent=True)),
             ('extratrees', ExtraTreesClassifier())
         ]
-        param_grid = {
+        aim_grid = {
             'logreg': {
                 'model__C': [0.01, 0.1, 1.0, 10.0, 100.0],
                 'model__penalty': ['l1','l2', None],
@@ -63,9 +63,9 @@ def get_models(problem_type):
             ('catboost', CatBoostRegressor(silent=True)),
             ('extratrees', ExtraTreesRegressor())
         ]
-        param_grid = {
+        aim_grid = {
             'linreg': {
-                # No parameters for LinearRegression in this example
+                # No aimeters for LinearRegression in this example
             },
             'rf': {
                 'model__n_estimators': [50, 100, 200, 300],
@@ -108,5 +108,6 @@ def get_models(problem_type):
         logger.error("Invalid problem type: %s", problem_type)
         raise ValueError("problem_type must be either 'classification' or 'regression'")
     
-    logger.debug("Models and parameter grids have been created.")
-    return models, param_grid
+    logger.debug("Models and aimeter grids have been created.")
+    return models, aim_grid
+
