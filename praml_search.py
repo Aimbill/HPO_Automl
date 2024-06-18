@@ -2,31 +2,31 @@ import os
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from .preprocessing import get_preprocessor
-from .models import get_models
+from .model import get_models
 from .evaluation import evaluate_model, plot_learning_rate_distribution
 from .utils import get_logger
-from .tpe import TPE
-from .hoo import HyperoptOptimizer
+from .T import TPE
+from .HPO import HyperoptOptimizer
 import numpy as np
 
 logger = get_logger(__name__)
 
-class PramlSearchResult:
-    def __init__(self, best_model, best_model_name, best_score, best_score_hoo, best_pipeline, best_pipeline_hoo, best_params, ranklist, ranklist_hoo, best_model_name_hoo, best_params_hoo):
+class HPO_AML_SearchResult:
+    def __init__(self, best_model, best_model_name, best_score, best_score_hoo, best_pipeline, best_pipeline_hoo, best_aim, ranklist, ranklist_hoo, best_model_name_hoo, best_aim_hoo):
         self.best_model = best_model
         self.best_model_name = best_model_name
-        self.parameters = best_params
+        self.parameters = best_aim
         self.ranklist = ranklist
         self.ranklist_hoo = ranklist_hoo
         self.best_model_name_hoo = best_model_name_hoo
-        self.parameters_hoo = best_params_hoo
+        self.parameters_hoo = best_aim_hoo
         self.best_score_hoo = best_score_hoo
         self.best_score = best_score
         self.best_pipeline = best_pipeline
         self.best_pipeline_hoo = best_pipeline_hoo
 
-def praml_search(dataset, target_column, problem_type, basis, max_evals=50):
-    logger.info("Starting praml_search")
+def HPO_AML_search(dataset, target_column, problem_type, basis, max_evals=50):
+    logger.info("Starting HPO_AML_search")
     X = dataset.drop(columns=[target_column])
     y = dataset[target_column]
     
@@ -37,7 +37,7 @@ def praml_search(dataset, target_column, problem_type, basis, max_evals=50):
     
     logger.debug("Preprocessing the dataset")
     preprocessor = get_preprocessor(numerical_features, categorical_features, text_features, time_features)
-    models, param_grids = get_models(problem_type)
+    models, aim_grids = get_models(problem_type)
     
     pipelines = []
     for model_name, model in models:
@@ -48,11 +48,11 @@ def praml_search(dataset, target_column, problem_type, basis, max_evals=50):
         pipelines.append((model_name, pipeline))
     
     logger.info("Starting TPE optimization")
-    tpe = TPE(pipelines, param_grids, max_evals)
-    hoo = HyperoptOptimizer(pipelines, param_grids, max_evals)
+    T = TPE(pipelines, aim_grids, max_evals)
+    HPO = HyperoptOptimizer(pipelines, aim_grids, max_evals)
 
-    best_pipeline, best_params, best_score = tpe.optimize(X, y, problem_type)
-    best_pipeline_hoo, best_params_hoo, best_score_hoo = hoo.optimize(X, y, problem_type)
+    best_pipeline, best_aim, best_score = T.optimize(X, y, problem_type)
+    best_pipeline_hoo, best_aim_hoo, best_score_hoo = HPO.optimize(X, y, problem_type)
     
     try:
         best_model_name = [name for name, model in pipelines if model == best_pipeline][0]
@@ -95,7 +95,7 @@ def praml_search(dataset, target_column, problem_type, basis, max_evals=50):
     ranklist_hoo = pd.DataFrame(ranklist_data_hoo, columns=['Model', basis.capitalize(), 'F1 Score', 'ROC AUC', 'Precision', 'Recall', 'Validation Score'])
     ranklist_hoo = ranklist_hoo.sort_values(by=basis.capitalize(), ascending=False).reset_index(drop=True)
         
-    logger.info("praml_search completed")
+    logger.info("HPO_AML_search completed")
 
     # Plot and save learning rate distribution for TPE
     results_dir = os.path.join(os.path.dirname(__file__), '../lr_curves_results')
@@ -106,4 +106,4 @@ def praml_search(dataset, target_column, problem_type, basis, max_evals=50):
     # Plot and save learning rate distribution for HOO
     plot_learning_rate_distribution(learning_rates_hoo, 'Learning Rate Distribution (HOO)', os.path.join(results_dir, 'learning_rate_distribution_hoo.png'))
 
-    return PramlSearchResult(best_pipeline, best_model_name, best_score, best_score_hoo, best_pipeline, best_pipeline_hoo, best_params, ranklist, ranklist_hoo, best_model_name_hoo, best_params_hoo)
+    return HPO_AML_SearchResult(best_pipeline, best_model_name, best_score, best_score_hoo, best_pipeline, best_pipeline_hoo, best_aim, ranklist, ranklist_hoo, best_model_name_hoo, best_aim_hoo)
